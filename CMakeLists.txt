@@ -47,6 +47,8 @@ FetchContent_Declare(pugg
   EXCLUDE_FROM_ALL
 )
 
+
+
 set(BUILD_TESTING OFF CACHE INTERNAL "")
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 FetchContent_Declare(json
@@ -56,7 +58,37 @@ FetchContent_Declare(json
   EXCLUDE_FROM_ALL
 )
 
-FetchContent_MakeAvailable(pugg json)
+
+find_package(Eigen3 REQUIRED)
+
+FetchContent_Declare(negotiator
+  GIT_REPOSITORY https://github.com/pure-MADNESS/negotiator-lib.git
+  GIT_TAG        main
+  GIT_SHALLOW    TRUE
+)
+
+FetchContent_Declare(forecast
+  GIT_REPOSITORY https://github.com/pure-MADNESS/forecast-lib.git
+  GIT_TAG        main
+  GIT_SHALLOW    TRUE
+)
+
+FetchContent_Declare(httplib
+  GIT_REPOSITORY https://github.com/yhirose/cpp-httplib.git
+  GIT_TAG        master  # Sempre latest
+  GIT_SHALLOW    TRUE
+)
+
+
+FetchContent_Declare(ekf
+  GIT_REPOSITORY https://github.com/pure-MADNESS/ekf-lib.git
+  GIT_TAG        main
+  GIT_SHALLOW    TRUE
+)
+
+
+FetchContent_MakeAvailable(pugg json negotiator httplib forecast ekf)
+
 
 FetchContent_Populate(plugin 
   GIT_REPOSITORY https://github.com/pbosetti/mads_plugin.git
@@ -113,7 +145,8 @@ endif()
 include_directories(${json_SOURCE_DIR}/include)
 
 # These plugins are always build and use for testing
-add_plugin(solar_agent)
+
+add_plugin(solar_agent LIBS Eigen3::Eigen negotiator forecast ekf SRCS ${SRC_DIR}/hydro_ekf.cpp)  
 
 
 # INSTALL ######################################################################
