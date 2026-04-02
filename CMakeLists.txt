@@ -146,7 +146,7 @@ include_directories(${json_SOURCE_DIR}/include)
 
 # These plugins are always build and use for testing
 
-add_plugin(solar_agent LIBS Eigen3::Eigen negotiator forecast ekf SRCS ${SRC_DIR}/hydro_ekf.cpp)  
+add_plugin(solar_agent LIBS Eigen3::Eigen negotiator forecast ekf SRCS ${SRC_DIR}/solarekf.cpp)  
 
 
 # INSTALL ######################################################################
