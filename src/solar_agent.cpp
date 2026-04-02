@@ -18,6 +18,12 @@
 #include <pugg/Kernel.h>
 
 // other includes as needed here
+#include "negotiator.hpp"
+#include "solarekf.hpp"
+#include "forecast.hpp"
+#include <chrono>
+#include <iostream>
+#include <random>
 
 // Define the name of the plugin
 #ifndef PLUGIN_NAME
@@ -29,6 +35,8 @@
 // Load the namespaces
 using namespace std;
 using json = nlohmann::json;
+using namespace Eigen;
+using namespace chrono;
 
 
 // Plugin class. This shall be the only part that needs to be modified,
@@ -57,13 +65,21 @@ public:
       int current_hour = local_tm->tm_hour - 1;
 
       auto irradiances = input.at("direct_normal_irradiance");
-      _irradiance = irradiances.at(current_hour).get<double>;
+      _irradiance = irradiances.at(current_hour).get<double>();
       double next_irradiance = irradiances.at(++current_hour).get<double>();
       
-      _next_p_mean = 
+      _next_p_mean = _area * _efficiency * next_irradiance;
 
       future_power(input);
     }
+
+    _negotiator.listen(input, topic);
+    if(topic.rfind("dc", 0) == 0){
+
+      _v_dc_measured = input.at("output").at("vdc").get<double>();
+      _i_dc_measured = input.at("output").at("idc").get<double>();
+    }
+
     return return_type::success;
   }
 
@@ -87,11 +103,11 @@ public:
 
       _negotiator.set_weather_mean(_next_p_mean);
 
-      _ekf.set_inputs(_irradiance, _output_power);
+      _ekf.set_inputs(_irradiance, _v_dc_measured);
       _ekf.predict(PERIOD);
 
       VectorXd z(1); 
-      z(0) = 
+      z(0) = _i_dc_measured;
 
       double tot_erg_w = max(0.8, _negotiator.get_ergodic_penalty() * _negotiator.get_weather_penalty());
       _ekf.update(z, tot_erg_w);
@@ -116,9 +132,9 @@ public:
         cout << "\rNegotiation in progess  \033[K" << endl;
       }
 
-      if(_omega > -0.1 && _omega < 0.1){
+      if(_i_dc_measured > -0.1 && _i_dc_measured < 0.1){
 
-        _omega = 0.1;
+        _i_dc_measured = 0.1;
       }
 
       out = _negotiator.speak();
@@ -143,8 +159,6 @@ public:
     // Call the parent class method to set the common parameters 
     // (e.g. agent_id, etc.)
     Filter::set_params(params);
-
-    _noise = _dis(_gen);
 
     // provide sensible defaults for the parameters by setting e.g.
     _params["some_field"] = "default_value";
@@ -173,23 +187,24 @@ private:
   double _output_power = 0.0;
   double _covariance = 0.01;
   Negotiator _negotiator = Negotiator(0.01, 0.0);
-  SolarEKF _ekf = SolarEKF();
-  double _irradiance = 0.0:
+  SolarEKF _ekf = SolarEKF(4, 0.2);
+  double _irradiance = 0.0;
   WeatherData _weather;
   vector<double> _power_vector;
   double _next_p_mean = 0.0;
 
+  double _area = 4; //m^2
+  double _efficiency = 0.2;
+  double _v_dc_measured = 0.0;
+  double _i_dc_measured = 0.0;
+
   void future_power(const json& forecast_json);
   steady_clock::time_point _last_time = steady_clock::now();
   double _time_accumulator = 0.0;
-
-  std::random_device _rd;
-  std::mt19937 _gen;
-  std::uniform_real_distribution<double> _dis;
   
 };
 
-void Wind_agentPlugin::future_power(const json& forecast_json){
+void Solar_agentPlugin::future_power(const json& forecast_json){
 
   _power_vector.clear();
 
@@ -204,7 +219,7 @@ void Wind_agentPlugin::future_power(const json& forecast_json){
       break;
     }
     double irradiance = forecast_json.at("direct_normal_irradiance").at(i).get<double>();
-    double power = 
+    double power = _area * _efficiency * irradiance;
     _power_vector.push_back(power);
 
   }
