@@ -24,6 +24,8 @@
 #define PLUGIN_NAME "solar_agent"
 #endif
 
+#define PERIOD 0.1
+
 // Load the namespaces
 using namespace std;
 using json = nlohmann::json;
@@ -47,6 +49,21 @@ public:
   // return_type::critical: execution stops
   return_type load_data(json const &input, string topic = "", vector<unsigned char> const *blob = nullptr) override {
     // Do something with the input data
+
+    if(topic == "forecast"){
+
+      auto now_time_t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+      tm* local_tm = std::localtime(&now_time_t);
+      int current_hour = local_tm->tm_hour - 1;
+
+      auto irradiances = input.at("direct_normal_irradiance");
+      _irradiance = irradiances.at(current_hour).get<double>;
+      double next_irradiance = irradiances.at(++current_hour).get<double>();
+      
+      _next_p_mean = 
+
+      future_power(input);
+    }
     return return_type::success;
   }
 
@@ -61,18 +78,73 @@ public:
   return_type process(json &out, vector<unsigned char> *blob = nullptr) override {
     out.clear();
 
+    auto now = steady_clock::now();
+    duration<double> elapsed = now - _last_time;
+    _last_time = now;
+    _time_accumulator += elapsed.count();
+
+    while(_time_accumulator >= PERIOD){
+
+      _negotiator.set_weather_mean(_next_p_mean);
+
+      _ekf.set_inputs(_irradiance, _output_power);
+      _ekf.predict(PERIOD);
+
+      VectorXd z(1); 
+      z(0) = 
+
+      double tot_erg_w = max(0.8, _negotiator.get_ergodic_penalty() * _negotiator.get_weather_penalty());
+      _ekf.update(z, tot_erg_w);
+
+      _input_power = _ekf.get_state()(1);
+      _covariance = _ekf.get_covariance()(1, 1);
+
+      _time_accumulator -= PERIOD;
+      
+      _negotiator.set_cov(_covariance);
+      _negotiator.set_pmax(_input_power);
+
+      _negotiator.update_proposal();
+      if(_negotiator.get_stab_flag()){
+
+        _output_power = _negotiator.get_proposed_power();
+
+        // cout << "\rErogating [" << _output_power << "W] while generating [" << _input_power << "W] at omega:" << _omega << "\033[K" << endl;
+      
+      } else{
+
+        cout << "\rNegotiation in progess  \033[K" << endl;
+      }
+
+      if(_omega > -0.1 && _omega < 0.1){
+
+        _omega = 0.1;
+      }
+
+      out = _negotiator.speak();
+      out["hourly"] = _power_vector;
+      out["fmu_input"][""] =  
+      out["fmu_input"]["irradiance"] = _irradiance;
+
+      if (!_agent_id.empty()) out["agent_id"] = _agent_id;
+      return return_type::success;
+    }   
+
+    
     // load the data as necessary and set the fields of the json out variable
 
     // This sets the agent_id field in the output json object, only when it is
     // not empty
-    if (!_agent_id.empty()) out["agent_id"] = _agent_id;
-    return return_type::success;
+
+    return return_type::retry;
   }
   
   void set_params(const json &params) override {
     // Call the parent class method to set the common parameters 
     // (e.g. agent_id, etc.)
     Filter::set_params(params);
+
+    _noise = _dis(_gen);
 
     // provide sensible defaults for the parameters by setting e.g.
     _params["some_field"] = "default_value";
@@ -96,8 +168,48 @@ public:
 
 private:
   // Define the fields that are used to store internal resources
+
+  double _input_power = 0.0;
+  double _output_power = 0.0;
+  double _covariance = 0.01;
+  Negotiator _negotiator = Negotiator(0.01, 0.0);
+  SolarEKF _ekf = SolarEKF();
+  double _irradiance = 0.0:
+  WeatherData _weather;
+  vector<double> _power_vector;
+  double _next_p_mean = 0.0;
+
+  void future_power(const json& forecast_json);
+  steady_clock::time_point _last_time = steady_clock::now();
+  double _time_accumulator = 0.0;
+
+  std::random_device _rd;
+  std::mt19937 _gen;
+  std::uniform_real_distribution<double> _dis;
   
 };
+
+void Wind_agentPlugin::future_power(const json& forecast_json){
+
+  _power_vector.clear();
+
+  if(!forecast_json.contains("direct_normal_irradiance")){
+    cout << "No forecast data available" << endl;
+    return;
+  }
+
+  for(int i =0; i<24; ++i){
+
+    if(i>=static_cast<int>(forecast_json.at("direct_normal_irradiance").size())){
+      break;
+    }
+    double irradiance = forecast_json.at("direct_normal_irradiance").at(i).get<double>();
+    double power = 
+    _power_vector.push_back(power);
+
+  }
+
+}
 
 
 /*
