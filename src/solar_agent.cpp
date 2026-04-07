@@ -66,6 +66,7 @@ public:
 
       auto irradiances = input.at("direct_normal_irradiance");
       _irradiance = irradiances.at(current_hour).get<double>();
+      _temperature = input.at("temperature").at(current_hour).get<double>();
       double next_irradiance = irradiances.at(++current_hour).get<double>();
       
       _next_p_mean = _area * _efficiency * next_irradiance;
@@ -139,8 +140,9 @@ public:
 
       out = _negotiator.speak();
       out["hourly"] = _power_vector;
-      out["fmu_input"][""] =  
+      out["fmu_input"]["temperature"] = _temperature;  
       out["fmu_input"]["irradiance"] = _irradiance;
+      out["fmu_input"]["load_power"] = _output_power;
 
       if (!_agent_id.empty()) out["agent_id"] = _agent_id;
       return return_type::success;
@@ -189,6 +191,7 @@ private:
   Negotiator _negotiator = Negotiator(0.01, 0.0);
   SolarEKF _ekf = SolarEKF(4, 0.2);
   double _irradiance = 0.0;
+  double _temperature = 0.0;
   WeatherData _weather;
   vector<double> _power_vector;
   double _next_p_mean = 0.0;
