@@ -144,6 +144,8 @@ public:
       out["fmu_input"]["irradiance"] = _irradiance;
       out["fmu_input"]["load_power"] = _output_power;
 
+      cout << "generating [" << _input_power << "] while erogating [" << _output_power << "] " << "\033[K" << endl;
+
       if (!_agent_id.empty()) out["agent_id"] = _agent_id;
       return return_type::success;
     }   
