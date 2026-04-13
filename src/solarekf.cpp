@@ -18,7 +18,7 @@ SolarEKF::SolarEKF(double area, double efficiency)
   R.resize(1, 1);
 
   Q << 25.0, 0, 
-        0,    10.0; 
+        0,    0.5; 
 
   // current sensor uncertainty
   R << 0.05; 
@@ -47,8 +47,8 @@ MatrixXd SolarEKF::F(const VectorXd& x, double dt) {
   // In un modello stazionario come questo, F tende a una matrice di zeri 
   // o identità a seconda di come vuoi modellare la persistenza.
   // Usiamo identità per mantenere la covarianza se l'API non cambia.
-  Fj << 0, 0,
-        0, 0; 
+  Fj << 1.0, 0,
+        0, 1.0; 
   
   return Fj;
 }

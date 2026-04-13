@@ -189,7 +189,7 @@ private:
   double _output_power = 0.0;
   double _covariance = 0.01;
   Negotiator _negotiator = Negotiator(0.01, 0.0);
-  SolarEKF _ekf = SolarEKF(4, 0.2);
+  SolarEKF _ekf = SolarEKF(20, 0.2);
   double _irradiance = 0.0;
   double _temperature = 0.0;
   WeatherData _weather;
