@@ -142,7 +142,7 @@ public:
       out["fmu_input"]["irradiance"] = _irradiance;
       out["fmu_input"]["load_power"] = _output_power;
 
-      cout << "\rErogating [" << _output_power << "W] while generating [" << _input_power << "W] at omega:" << "\t cov: " << _covariance << "\033[K" << endl;
+      cout << "\rErogating [" << _output_power << "W] while generating [" << _input_power << "W]" << "\t cov: " << _covariance << "\033[K" << endl;
 
       if (!_agent_id.empty()) out["agent_id"] = _agent_id;
       return return_type::success;
@@ -196,7 +196,7 @@ private:
   vector<double> _power_vector;
   double _next_p_mean = 0.0;
 
-  double _area = 4; //m^2
+  double _area = 20; //m^2
   double _efficiency = 0.2;
   double _v_dc_measured = 0.0;
   double _i_dc_measured = 0.0;
