@@ -142,7 +142,12 @@ public:
       out["fmu_input"]["irradiance"] = _irradiance;
       out["fmu_input"]["load_power"] = _output_power;
 
-      cout << "\rErogating [" << _output_power << "W] while generating [" << _input_power << endl;
+      cout << endl << "SOLAR AGENT" << endl;
+      cout << "Erogating: " << _output_power << "W" << endl;
+      cout << "Generating: " << _input_power << "W" << endl;
+      cout << "Covariance: " << _covariance << endl;
+      
+      cout << "\033[3A" << flush;
 
       if (!_agent_id.empty()) out["agent_id"] = _agent_id;
       return return_type::success;
