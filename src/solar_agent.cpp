@@ -63,7 +63,9 @@ public:
 
       auto now_time_t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
       tm* local_tm = std::localtime(&now_time_t);
-      int current_hour = local_tm->tm_hour - 1;
+      int current_hour = local_tm->tm_hour;
+
+      cout << current_hour << endl;
 
       auto irradiances = input.at("direct_normal_irradiance");
       _irradiance = irradiances.at(current_hour).get<double>();
