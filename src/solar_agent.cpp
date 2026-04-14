@@ -31,6 +31,7 @@
 #endif
 
 #define PERIOD 0.1
+#define _AREA 24
 
 // Load the namespaces
 using namespace std;
@@ -69,7 +70,7 @@ public:
       _temperature = input.at("temperature").at(current_hour).get<double>();
       double next_irradiance = irradiances.at(++current_hour).get<double>();
       
-      _next_p_mean = _area * _efficiency * next_irradiance;
+      _next_p_mean = _AREA * _efficiency * next_irradiance;
 
       future_power(input);
     }
@@ -189,14 +190,13 @@ private:
   double _output_power = 0.0;
   double _covariance = 0.01;
   Negotiator _negotiator = Negotiator(0.01, 0.0);
-  SolarEKF _ekf = SolarEKF(20, 0.2);
+  SolarEKF _ekf = SolarEKF(_AREA, 0.2);
   double _irradiance = 0.0;
   double _temperature = 0.0;
   WeatherData _weather;
   vector<double> _power_vector;
   double _next_p_mean = 0.0;
 
-  double _area = 20; //m^2
   double _efficiency = 0.2;
   double _v_dc_measured = 0.0;
   double _i_dc_measured = 0.0;
@@ -222,7 +222,7 @@ void Solar_agentPlugin::future_power(const json& forecast_json){
       break;
     }
     double irradiance = forecast_json.at("direct_normal_irradiance").at(i).get<double>();
-    double power = _area * _efficiency * irradiance;
+    double power = _AREA * _efficiency * irradiance;
     _power_vector.push_back(power);
 
   }
