@@ -17,8 +17,8 @@ SolarEKF::SolarEKF(double area, double efficiency)
   Q.resize(2, 2);
   R.resize(1, 1);
 
-  Q << 25.0, 0, 
-        0,    0.5; 
+  Q << 0.1, 0, 
+       0,   0.01;
 
   // current sensor uncertainty
   R << 0.05; 
@@ -30,29 +30,26 @@ void SolarEKF::set_inputs(double g_api, double v_now) {
 }
 
 VectorXd SolarEKF::f(const VectorXd& x, double dt) {
-  VectorXd x_new(2);
-  
-  x_new(0) = _g_forecast; 
-  x_new(1) = _area * _eff * _g_forecast;
+    VectorXd x_new(2);
+    double alpha = 0.98; 
+    
+    x_new(0) = alpha * x(0) + (1.0 - alpha) * _g_forecast;  
+    x_new(1) = _area * _eff * x_new(0); 
 
-  return x_new;
+    return x_new;
 }
 
 MatrixXd SolarEKF::F(const VectorXd& x, double dt) {
-  MatrixXd Fj(2, 2);
-  
-  // Jacobiano della dinamica:
-  // df1/dG = 0 (perché x_new(0) dipende solo da input esterno G_api)
-  // df2/dP = 0 
-  // In un modello stazionario come questo, F tende a una matrice di zeri 
-  // o identità a seconda di come vuoi modellare la persistenza.
-  // Usiamo identità per mantenere la covarianza se l'API non cambia.
-  Fj << 1.0, 0,
-        0, 1.0; 
-  
-  return Fj;
-}
+    MatrixXd Fj(2, 2);
+    
+    double alpha = 0.98;
+    double k = _area * _eff;
 
+    Fj << alpha, 0.0,
+          k,     0.0; 
+    
+    return Fj;
+}
 VectorXd SolarEKF::h(const VectorXd& x_pred) {
   VectorXd z_pred(1);
   
