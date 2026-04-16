@@ -17,11 +17,11 @@ SolarEKF::SolarEKF(double area, double efficiency)
   Q.resize(2, 2);
   R.resize(1, 1);
 
-  Q << 0.1, 0, 
-       0,   0.01;
+  Q << 0.01, 0, 
+       0,   1.0;
 
   // current sensor uncertainty
-  R << 0.05; 
+  R << 0.01; 
 }
 
 void SolarEKF::set_inputs(double g_api, double v_now) {
