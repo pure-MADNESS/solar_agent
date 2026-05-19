@@ -24,7 +24,7 @@ class SolarEKF : public EKF {
          */
         SolarEKF(double area, double efficiency);
 
-        void set_inputs(double g_api, double v_now);
+        void set_inputs(double v_now, double p_actual);
 
         /**
          * Prediction:
@@ -41,8 +41,8 @@ class SolarEKF : public EKF {
     private:
         double _area;       // [m^2]
         double _eff;        // efficiency
-        double _g_forecast; // [W/m^2]
         double _v_actual;   // [V] measured DC voltage
+        double _p_actual;
 };
 
 

@@ -107,14 +107,18 @@ public:
 
       _negotiator.set_weather_mean(_next_p_mean);
 
-      _ekf.set_inputs(_irradiance, _v_dc_measured);
+      _ekf.set_inputs(_v_dc_measured, _output_power);
       _ekf.predict(PERIOD);
 
-      VectorXd z(1); 
-      z(0) = _i_dc_measured;
+      VectorXd z(2); 
+      z(1) = _i_dc_measured;
+      z(0) = _irradiance;
 
       double tot_erg_w = max(0.8, _negotiator.get_ergodic_penalty() * _negotiator.get_weather_penalty());
-      _ekf.update(z, tot_erg_w);
+      VectorXd vec_erg_w(2);
+      vec_erg_w << tot_erg_w, 1.0;
+
+      _ekf.update(z, vec_erg_w);
 
       _input_power = _ekf.get_state()(1);
       if(_input_power < 0.001){
