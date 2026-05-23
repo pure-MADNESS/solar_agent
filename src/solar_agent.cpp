@@ -116,7 +116,7 @@ public:
 
       double tot_erg_w = max(0.8, _negotiator.get_history_penalty() * _negotiator.get_weather_penalty());
       VectorXd vec_erg_w(2);
-      vec_erg_w << tot_erg_w, 1.0;
+      vec_erg_w << 1.0, tot_erg_w;
 
       _ekf.update(z, vec_erg_w);
 
